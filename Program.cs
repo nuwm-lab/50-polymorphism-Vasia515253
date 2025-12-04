@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace LabWork
 {
@@ -23,22 +24,15 @@ public double Y { get; set; }
 // ----------------------------------------------------
 public class Triangle
 {
-    // Приватне поле для зберігання вершин
     private Point[] _vertices;
-
-    // Властивість для доступу
-    public Point[] Vertices => _vertices;
-
     protected int VertexCount => 3;
 
-    // Конструктор
     public Triangle(Point p1, Point p2, Point p3)
     {
         _vertices = new Point[VertexCount];
         SetVertices(p1, p2, p3);
     }
 
-    // Віртуальний метод для задання координат
     public virtual void SetVertices(params Point[] points)
     {
         if (points.Length < VertexCount)
@@ -48,7 +42,6 @@ public class Triangle
             _vertices[i] = points[i];
     }
 
-    // Віртуальний метод для виведення координат
     public virtual void PrintVertices()
     {
         Console.WriteLine($"--- Трикутник ({VertexCount} вершин) ---");
@@ -56,7 +49,6 @@ public class Triangle
             Console.WriteLine($"Вершина {i + 1}: ({_vertices[i].X}, {_vertices[i].Y})");
     }
 
-    // Віртуальний метод для обчислення площі
     public virtual double CalculateArea()
     {
         double area = 0.5 * Math.Abs(
@@ -74,18 +66,21 @@ public class Triangle
 public class ConvexQuadrilateral : Triangle
 {
     private Point[] _quadVertices;
-    private const int QuadCount = 4;
+    private const int QUAD_COUNT = 4;
 
     public ConvexQuadrilateral(Point p1, Point p2, Point p3, Point p4)
         : base(p1, p2, p3)
     {
-        _quadVertices = new Point[QuadCount];
+        _quadVertices = new Point[QUAD_COUNT];
         SetVertices(p1, p2, p3, p4);
     }
 
-    // Перевизначений метод для чотирьох вершин
     public void SetVertices(Point p1, Point p2, Point p3, Point p4)
     {
+        Point[] points = { p1, p2, p3, p4 };
+        if (!IsConvex(points))
+            throw new ArgumentException("Чотирикутник не є опуклим.");
+
         _quadVertices[0] = p1;
         _quadVertices[1] = p2;
         _quadVertices[2] = p3;
@@ -94,14 +89,14 @@ public class ConvexQuadrilateral : Triangle
 
     public override void PrintVertices()
     {
-        Console.WriteLine($"--- Опуклий чотирикутник ({QuadCount} вершин) ---");
-        for (int i = 0; i < QuadCount; i++)
+        Console.WriteLine($"--- Опуклий чотирикутник ({QUAD_COUNT} вершин) ---");
+        for (int i = 0; i < QUAD_COUNT; i++)
             Console.WriteLine($"Вершина {i + 1}: ({_quadVertices[i].X}, {_quadVertices[i].Y})");
     }
 
     public override double CalculateArea()
     {
-        // Розбиваємо чотирикутник на два трикутники: 0-1-2 та 0-2-3
+        // Площа = сума площ двох трикутників: 0-1-2 та 0-2-3
         double area1 = 0.5 * Math.Abs(
             _quadVertices[0].X * (_quadVertices[1].Y - _quadVertices[2].Y) +
             _quadVertices[1].X * (_quadVertices[2].Y - _quadVertices[0].Y) +
@@ -116,10 +111,33 @@ public class ConvexQuadrilateral : Triangle
 
         return area1 + area2;
     }
+
+    // Проста перевірка на опуклість (визначення знаків векторного добутку)
+    private bool IsConvex(Point[] points)
+    {
+        bool? sign = null;
+        int n = points.Length;
+        for (int i = 0; i < n; i++)
+        {
+            double dx1 = points[(i + 1) % n].X - points[i].X;
+            double dy1 = points[(i + 1) % n].Y - points[i].Y;
+            double dx2 = points[(i + 2) % n].X - points[(i + 1) % n].X;
+            double dy2 = points[(i + 2) % n].Y - points[(i + 1) % n].Y;
+            double cross = dx1 * dy2 - dy1 * dx2;
+            if (cross != 0)
+            {
+                if (!sign.HasValue)
+                    sign = cross > 0;
+                else if (sign.Value != (cross > 0))
+                    return false;
+            }
+        }
+        return true;
+    }
 }
 
 // ----------------------------------------------------
-// 4. Головна програма
+// 4. Головна програма з демонстрацією поліморфізму
 // ----------------------------------------------------
 class Program
 {
@@ -127,44 +145,17 @@ class Program
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-        // Демонстрація поліморфізму
-        Console.WriteLine("Оберіть тип фігури:");
-        Console.WriteLine("1 - Трикутник");
-        Console.WriteLine("2 - Опуклий чотирикутник");
-        Console.Write("Ваш вибір: ");
-        string choice = Console.ReadLine();
-
-        Triangle figure;
-
-        if (choice == "1")
+        var figures = new List<Triangle>
         {
-            figure = new Triangle(
-                new Point(0, 0),
-                new Point(3, 0),
-                new Point(0, 4)
-            );
-        }
-        else if (choice == "2")
-        {
-            figure = new ConvexQuadrilateral(
-                new Point(0, 0),
-                new Point(4, 0),
-                new Point(5, 3),
-                new Point(1, 4)
-            );
-        }
-        else
-        {
-            Console.WriteLine("Некоректний вибір. Створюємо трикутник за замовчуванням.");
-            figure = new Triangle(
-                new Point(0, 0),
-                new Point(1, 0),
-                new Point(0, 1)
-            );
-        }
+            new Triangle(new Point(0,0), new Point(3,0), new Point(0,4)),
+            new ConvexQuadrilateral(new Point(0,0), new Point(4,0), new Point(5,3), new Point(1,4))
+        };
 
-        figure.PrintVertices();
-        Console.WriteLine($"\nПлоща фігури: {figure.CalculateArea():F2}");
+        foreach (var figure in figures)
+        {
+            figure.PrintVertices();
+            Console.WriteLine($"Площа: {figure.CalculateArea():F2}\n");
+        }
     }
 }
 ```
