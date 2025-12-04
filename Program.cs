@@ -3,7 +3,7 @@ using System;
 namespace LabWork
 {
 // ----------------------------------------------------
-// 1. Структура для представлення точки (вершини)
+// 1. Структура для точки
 // ----------------------------------------------------
 public struct Point
 {
@@ -19,106 +19,102 @@ public double Y { get; set; }
 }
 
 // ----------------------------------------------------
-// 2. Базовий клас: Triangle (Трикутник)
+// 2. Клас Triangle
 // ----------------------------------------------------
 public class Triangle
 {
-    protected Point[] vertices; 
-    protected int vertexCount = 3;
+    // Приватне поле для зберігання вершин
+    private Point[] _vertices;
 
+    // Властивість для доступу
+    public Point[] Vertices => _vertices;
+
+    protected int VertexCount => 3;
+
+    // Конструктор
     public Triangle(Point p1, Point p2, Point p3)
     {
-        vertices = new Point[vertexCount];
+        _vertices = new Point[VertexCount];
         SetVertices(p1, p2, p3);
     }
 
-    public virtual void SetVertices(params Point[] newVertices)
+    // Віртуальний метод для задання координат
+    public virtual void SetVertices(params Point[] points)
     {
-        if (newVertices.Length < vertexCount)
-        {
-            throw new ArgumentException($"Трикутник потребує {vertexCount} точок.");
-        }
+        if (points.Length < VertexCount)
+            throw new ArgumentException($"Трикутник потребує {VertexCount} точок.");
 
-        for (int i = 0; i < vertexCount; i++)
-        {
-            vertices[i] = newVertices[i];
-        }
+        for (int i = 0; i < VertexCount; i++)
+            _vertices[i] = points[i];
     }
 
-    public virtual void DisplayVertices()
+    // Віртуальний метод для виведення координат
+    public virtual void PrintVertices()
     {
-        Console.WriteLine($"--- Фігура: Трикутник ({vertexCount} вершин) ---");
-        for (int i = 0; i < vertexCount; i++)
-        {
-            Console.WriteLine($"Вершина {i + 1}: ({vertices[i].X}, {vertices[i].Y})");
-        }
+        Console.WriteLine($"--- Трикутник ({VertexCount} вершин) ---");
+        for (int i = 0; i < VertexCount; i++)
+            Console.WriteLine($"Вершина {i + 1}: ({_vertices[i].X}, {_vertices[i].Y})");
     }
 
+    // Віртуальний метод для обчислення площі
     public virtual double CalculateArea()
     {
-        // Формула площі трикутника за координатами (формула Гаусса)
         double area = 0.5 * Math.Abs(
-            vertices[0].X * (vertices[1].Y - vertices[2].Y) +
-            vertices[1].X * (vertices[2].Y - vertices[0].Y) +
-            vertices[2].X * (vertices[0].Y - vertices[1].Y)
+            _vertices[0].X * (_vertices[1].Y - _vertices[2].Y) +
+            _vertices[1].X * (_vertices[2].Y - _vertices[0].Y) +
+            _vertices[2].X * (_vertices[0].Y - _vertices[1].Y)
         );
         return area;
     }
 }
 
 // ----------------------------------------------------
-// 3. Похідний клас: ConvexQuadrilateral (Опуклий чотирикутник)
+// 3. Клас ConvexQuadrilateral
 // ----------------------------------------------------
 public class ConvexQuadrilateral : Triangle
 {
+    private Point[] _quadVertices;
     private const int QuadCount = 4;
 
     public ConvexQuadrilateral(Point p1, Point p2, Point p3, Point p4)
         : base(p1, p2, p3)
     {
-        vertices = new Point[QuadCount];
-        vertexCount = QuadCount;
+        _quadVertices = new Point[QuadCount];
         SetVertices(p1, p2, p3, p4);
     }
 
-    public override void SetVertices(params Point[] newVertices)
+    // Перевизначений метод для чотирьох вершин
+    public void SetVertices(Point p1, Point p2, Point p3, Point p4)
     {
-        if (newVertices.Length < QuadCount)
-        {
-            throw new ArgumentException($"Опуклий чотирикутник потребує {QuadCount} точок.");
-        }
-
-        for (int i = 0; i < QuadCount; i++)
-        {
-            vertices[i] = newVertices[i];
-        }
+        _quadVertices[0] = p1;
+        _quadVertices[1] = p2;
+        _quadVertices[2] = p3;
+        _quadVertices[3] = p4;
     }
 
-    public override void DisplayVertices()
+    public override void PrintVertices()
     {
-        Console.WriteLine($"--- Фігура: Опуклий чотирикутник ({vertexCount} вершин) ---");
-        for (int i = 0; i < vertexCount; i++)
-        {
-            Console.WriteLine($"Вершина {i + 1}: ({vertices[i].X}, {vertices[i].Y})");
-        }
+        Console.WriteLine($"--- Опуклий чотирикутник ({QuadCount} вершин) ---");
+        for (int i = 0; i < QuadCount; i++)
+            Console.WriteLine($"Вершина {i + 1}: ({_quadVertices[i].X}, {_quadVertices[i].Y})");
     }
 
     public override double CalculateArea()
     {
-        // Сумарна площа двох трикутників: 1-2-3 та 1-3-4
-        double area123 = 0.5 * Math.Abs(
-            vertices[0].X * (vertices[1].Y - vertices[2].Y) +
-            vertices[1].X * (vertices[2].Y - vertices[0].Y) +
-            vertices[2].X * (vertices[0].Y - vertices[1].Y)
+        // Розбиваємо чотирикутник на два трикутники: 0-1-2 та 0-2-3
+        double area1 = 0.5 * Math.Abs(
+            _quadVertices[0].X * (_quadVertices[1].Y - _quadVertices[2].Y) +
+            _quadVertices[1].X * (_quadVertices[2].Y - _quadVertices[0].Y) +
+            _quadVertices[2].X * (_quadVertices[0].Y - _quadVertices[1].Y)
         );
 
-        double area134 = 0.5 * Math.Abs(
-            vertices[0].X * (vertices[2].Y - vertices[3].Y) +
-            vertices[2].X * (vertices[3].Y - vertices[0].Y) +
-            vertices[3].X * (vertices[0].Y - vertices[2].Y)
+        double area2 = 0.5 * Math.Abs(
+            _quadVertices[0].X * (_quadVertices[2].Y - _quadVertices[3].Y) +
+            _quadVertices[2].X * (_quadVertices[3].Y - _quadVertices[0].Y) +
+            _quadVertices[3].X * (_quadVertices[0].Y - _quadVertices[2].Y)
         );
 
-        return area123 + area134;
+        return area1 + area2;
     }
 }
 
@@ -131,43 +127,44 @@ class Program
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-        Console.WriteLine("## ✍️ Демонстрація поліморфізму");
-        Console.WriteLine("Оберіть тип фігури, яку бажаєте створити:");
+        // Демонстрація поліморфізму
+        Console.WriteLine("Оберіть тип фігури:");
         Console.WriteLine("1 - Трикутник");
         Console.WriteLine("2 - Опуклий чотирикутник");
-        Console.Write("Ваш вибір (1 або 2): ");
+        Console.Write("Ваш вибір: ");
+        string choice = Console.ReadLine();
 
-        string userChoice = Console.ReadLine();
         Triangle figure;
 
-        if (userChoice == "1")
+        if (choice == "1")
         {
-            Point t1 = new Point(1, 1);
-            Point t2 = new Point(4, 5);
-            Point t3 = new Point(1, 5);
-            figure = new Triangle(t1, t2, t3);
-            Console.WriteLine("\nСтворено об'єкт: Трикутник.");
+            figure = new Triangle(
+                new Point(0, 0),
+                new Point(3, 0),
+                new Point(0, 4)
+            );
         }
-        else if (userChoice == "2")
+        else if (choice == "2")
         {
-            Point q1 = new Point(0, 0);
-            Point q2 = new Point(6, 0);
-            Point q3 = new Point(7, 3);
-            Point q4 = new Point(1, 4);
-            figure = new ConvexQuadrilateral(q1, q2, q3, q4);
-            Console.WriteLine("\nСтворено об'єкт: Опуклий чотирикутник.");
+            figure = new ConvexQuadrilateral(
+                new Point(0, 0),
+                new Point(4, 0),
+                new Point(5, 3),
+                new Point(1, 4)
+            );
         }
         else
         {
-            figure = new Triangle(new Point(0, 0), new Point(1, 0), new Point(0, 1));
-            Console.WriteLine("\nНекоректний вибір. Створено об'єкт за замовчуванням: Трикутник.");
+            Console.WriteLine("Некоректний вибір. Створюємо трикутник за замовчуванням.");
+            figure = new Triangle(
+                new Point(0, 0),
+                new Point(1, 0),
+                new Point(0, 1)
+            );
         }
 
-        Console.WriteLine("\n" + new string('-', 45));
-        figure.DisplayVertices();
-        double area = figure.CalculateArea();
-        Console.WriteLine($"\n✅ Площа фігури: {area:F2}");
-        Console.WriteLine(new string('-', 45));
+        figure.PrintVertices();
+        Console.WriteLine($"\nПлоща фігури: {figure.CalculateArea():F2}");
     }
 }
 ```
